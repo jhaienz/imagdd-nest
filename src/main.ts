@@ -6,7 +6,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  app.enableCors({
+  origin: ['https://imagdd.vercel.app', 'http://localhost:4321'],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
