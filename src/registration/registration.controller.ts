@@ -30,8 +30,11 @@ export class RegistrationController {
           email: 'juan.dela.cruz@email.com',
           fullName: 'Juan Dela Cruz',
           designation: 'student',
-          affiliation: 'University of the Philippines',
+          affiliation: 'ADNU',
           contactNumber: '+63 912 345 6789',
+          attendanceType: 'workshop',
+          workshopDay1: 'workshop1',
+          workshopDay2: 'workshop4',
           createdAt: '2026-04-17T08:00:00.000Z',
           updatedAt: '2026-04-17T08:00:00.000Z',
         },
@@ -49,12 +52,11 @@ export class RegistrationController {
     },
   })
   @ApiServiceUnavailableResponse({
-    description: 'School or professional slots are full.',
+    description: 'Overall, school, professional, or workshop slots are full.',
     schema: {
       example: {
         statusCode: 503,
-        message:
-          'Registration slots for Ateneo De Naga are full (50-slot limit reached).',
+        message: 'Workshop 1 — DIA Lab 1 (Day 1) is full (30-slot limit reached).',
         error: 'Service Unavailable',
       },
     },
@@ -65,22 +67,26 @@ export class RegistrationController {
   }
 
   @Get('slots')
-  @ApiOperation({ summary: 'Get available registration slot counts per school and professional pool' })
+  @ApiOperation({ summary: 'Get available registration slot counts' })
   @ApiOkResponse({
-    description: 'Returns slot counts per school (50 each) and professional pool (100 total).',
+    description:
+      'Returns overall, per-school, professional pool, attendance type, and per-workshop counts.',
     schema: {
       example: {
+        overall: { registered: 43, remaining: 207, limit: 250 },
         schools: [
-          { school: 'Ateneo De Naga', registered: 10, limit: 50, remaining: 40 },
-          { school: 'Naga College Foundation', registered: 5, limit: 50, remaining: 45 },
-          {
-            school: 'Bicol State College of Applied Sciences and Technology',
-            registered: 20,
-            limit: 50,
-            remaining: 30,
-          },
+          { school: 'ADNU', registered: 10, limit: 50, remaining: 40 },
+          { school: 'NCF', registered: 5, limit: 50, remaining: 45 },
+          { school: 'BISCAST', registered: 20, limit: 50, remaining: 30 },
         ],
         professionals: { registered: 8, remaining: 92, limit: 100 },
+        attendance: { seminar: 25, workshop: 18 },
+        workshops: [
+          { id: 'workshop1', label: 'Workshop 1 — DIA Lab 1 (Day 1)', registered: 12, limit: 30, remaining: 18 },
+          { id: 'workshop2', label: 'Workshop 2 — DIA Lab 2 (Day 1)', registered: 6, limit: 30, remaining: 24 },
+          { id: 'workshop4', label: 'Workshop 4 — DIA Lab 1 (Day 2)', registered: 9, limit: 30, remaining: 21 },
+          { id: 'workshop5', label: 'Workshop 5 — DIA Lab 2 (Day 2)', registered: 3, limit: 30, remaining: 27 },
+        ],
       },
     },
   })
