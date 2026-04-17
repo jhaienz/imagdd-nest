@@ -11,6 +11,15 @@ export enum Designation {
   OTHER = 'other',
 }
 
+export enum School {
+  ATENEO = 'Ateneo De Naga',
+  NCF = 'Naga College Foundation',
+  BISCAST = 'Bicol State College of Applied Sciences and Technology',
+}
+
+export const SCHOOL_SLOT_LIMIT = 50;
+export const PROFESSIONAL_SLOT_LIMIT = 100;
+
 @Schema({ timestamps: true })
 export class Registration {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })

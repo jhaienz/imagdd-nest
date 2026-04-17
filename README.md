@@ -2,9 +2,23 @@
 
 Backend API for the IMAGDD event registration form built with NestJS and MongoDB.
 
-- Max **250 slots**
+- Max **250 slots** (split across schools and professional pool)
 - Duplicate emails are rejected
 - No authentication required
+
+---
+
+## Slot Allocation
+
+| Group | Slots |
+|---|---|
+| Ateneo De Naga (students) | 50 |
+| Naga College Foundation (students) | 50 |
+| Bicol State College of Applied Sciences and Technology (students) | 50 |
+| Educators, Industry Professionals, Game Developers, Other | 100 |
+| **Total** | **250** |
+
+> Students must select one of the three partner schools as their affiliation. Students from other schools are not accepted.
 
 ---
 
@@ -29,7 +43,7 @@ Register a new participant.
   "email": "juan.dela.cruz@email.com",
   "fullName": "Juan Dela Cruz",
   "designation": "student",
-  "affiliation": "University of the Philippines",
+  "affiliation": "Ateneo De Naga",
   "contactNumber": "+63 912 345 6789"
 }
 ```
@@ -41,8 +55,14 @@ Register a new participant.
 | `email` | string | Yes | Must be a valid email. Duplicates are rejected. |
 | `fullName` | string | Yes | Full name of the participant. |
 | `designation` | string | Yes | One of: `student`, `game developer`, `educator`, `industry professional`, `other` |
-| `affiliation` | string | Yes | School, company, or organization. |
+| `affiliation` | string | Yes | **Students:** must be one of the three partner schools. **Others:** any school, company, or organization. |
 | `contactNumber` | string | Yes | Valid phone number (7–20 digits, `+` and spaces allowed). |
+
+**Valid school names for students (exact match required)**
+
+- `Ateneo De Naga`
+- `Naga College Foundation`
+- `Bicol State College of Applied Sciences and Technology`
 
 **Responses**
 
@@ -56,7 +76,7 @@ Register a new participant.
     "email": "juan.dela.cruz@email.com",
     "fullName": "Juan Dela Cruz",
     "designation": "student",
-    "affiliation": "University of the Philippines",
+    "affiliation": "Ateneo De Naga",
     "contactNumber": "+63 912 345 6789",
     "createdAt": "2026-04-17T08:00:00.000Z",
     "updatedAt": "2026-04-17T08:00:00.000Z"
@@ -74,6 +94,16 @@ Register a new participant.
 }
 ```
 
+`400 Bad Request` — Student affiliation not in partner schools
+
+```json
+{
+  "statusCode": 400,
+  "message": "Students must belong to one of the following schools: Ateneo De Naga, Naga College Foundation, Bicol State College of Applied Sciences and Technology",
+  "error": "Bad Request"
+}
+```
+
 `400 Bad Request` — Duplicate email
 
 ```json
@@ -84,12 +114,22 @@ Register a new participant.
 }
 ```
 
-`503 Service Unavailable` — Slots full
+`503 Service Unavailable` — School slots full
 
 ```json
 {
   "statusCode": 503,
-  "message": "Registration is full. The 250-slot limit has been reached.",
+  "message": "Registration slots for Ateneo De Naga are full (50-slot limit reached).",
+  "error": "Service Unavailable"
+}
+```
+
+`503 Service Unavailable` — Professional pool full
+
+```json
+{
+  "statusCode": 503,
+  "message": "Registration slots for professionals/educators are full (100-slot limit reached).",
   "error": "Service Unavailable"
 }
 ```
@@ -98,7 +138,7 @@ Register a new participant.
 
 ### GET `/registration/slots`
 
-Check how many slots have been filled and how many remain.
+Check how many slots have been filled and how many remain per group.
 
 **Response**
 
@@ -106,8 +146,16 @@ Check how many slots have been filled and how many remain.
 
 ```json
 {
-  "registered": 42,
-  "remaining": 208
+  "schools": [
+    { "school": "Ateneo De Naga", "registered": 10, "limit": 50, "remaining": 40 },
+    { "school": "Naga College Foundation", "registered": 5, "limit": 50, "remaining": 45 },
+    { "school": "Bicol State College of Applied Sciences and Technology", "registered": 20, "limit": 50, "remaining": 30 }
+  ],
+  "professionals": {
+    "registered": 8,
+    "remaining": 92,
+    "limit": 100
+  }
 }
 ```
 

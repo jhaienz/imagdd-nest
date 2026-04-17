@@ -6,9 +6,21 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateRegistrationDto } from './registration.dto';
-import { Registration, RegistrationDocument } from './registration.schema';
+import {
+  Designation,
+  PROFESSIONAL_SLOT_LIMIT,
+  Registration,
+  RegistrationDocument,
+  School,
+  SCHOOL_SLOT_LIMIT,
+} from './registration.schema';
 
-const MAX_SLOTS = 250;
+const PROFESSIONAL_DESIGNATIONS = [
+  Designation.EDUCATOR,
+  Designation.INDUSTRY_PROFESSIONAL,
+  Designation.GAME_DEVELOPER,
+  Designation.OTHER,
+];
 
 @Injectable()
 export class RegistrationService {
@@ -18,13 +30,6 @@ export class RegistrationService {
   ) {}
 
   async register(dto: CreateRegistrationDto): Promise<Registration> {
-    const count = await this.registrationModel.countDocuments();
-    if (count >= MAX_SLOTS) {
-      throw new ServiceUnavailableException(
-        'Registration is full. The 250-slot limit has been reached.',
-      );
-    }
-
     const existing = await this.registrationModel
       .findOne({ email: dto.email.toLowerCase() })
       .exec();
@@ -34,12 +39,58 @@ export class RegistrationService {
       );
     }
 
+    if (dto.designation === Designation.STUDENT) {
+      const schoolCount = await this.registrationModel.countDocuments({
+        affiliation: dto.affiliation,
+        designation: Designation.STUDENT,
+      });
+      if (schoolCount >= SCHOOL_SLOT_LIMIT) {
+        throw new ServiceUnavailableException(
+          `Registration slots for ${dto.affiliation} are full (${SCHOOL_SLOT_LIMIT}-slot limit reached).`,
+        );
+      }
+    } else {
+      const professionalCount = await this.registrationModel.countDocuments({
+        designation: { $in: PROFESSIONAL_DESIGNATIONS },
+      });
+      if (professionalCount >= PROFESSIONAL_SLOT_LIMIT) {
+        throw new ServiceUnavailableException(
+          `Registration slots for professionals/educators are full (${PROFESSIONAL_SLOT_LIMIT}-slot limit reached).`,
+        );
+      }
+    }
+
     const registration = new this.registrationModel(dto);
     return registration.save();
   }
 
-  async getCount(): Promise<{ registered: number; remaining: number }> {
-    const registered = await this.registrationModel.countDocuments();
-    return { registered, remaining: MAX_SLOTS - registered };
+  async getCount() {
+    const [schools, professionals] = await Promise.all([
+      Promise.all(
+        Object.values(School).map(async (school) => ({
+          school,
+          registered: await this.registrationModel.countDocuments({
+            affiliation: school,
+            designation: Designation.STUDENT,
+          }),
+          limit: SCHOOL_SLOT_LIMIT,
+        })),
+      ),
+      this.registrationModel.countDocuments({
+        designation: { $in: PROFESSIONAL_DESIGNATIONS },
+      }),
+    ]);
+
+    return {
+      schools: schools.map((s) => ({
+        ...s,
+        remaining: SCHOOL_SLOT_LIMIT - s.registered,
+      })),
+      professionals: {
+        registered: professionals,
+        remaining: PROFESSIONAL_SLOT_LIMIT - professionals,
+        limit: PROFESSIONAL_SLOT_LIMIT,
+      },
+    };
   }
 }

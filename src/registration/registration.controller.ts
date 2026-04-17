@@ -49,11 +49,12 @@ export class RegistrationController {
     },
   })
   @ApiServiceUnavailableResponse({
-    description: 'Registration slots are full (250 limit reached).',
+    description: 'School or professional slots are full.',
     schema: {
       example: {
         statusCode: 503,
-        message: 'Registration is full. The 250-slot limit has been reached.',
+        message:
+          'Registration slots for Ateneo De Naga are full (50-slot limit reached).',
         error: 'Service Unavailable',
       },
     },
@@ -64,13 +65,22 @@ export class RegistrationController {
   }
 
   @Get('slots')
-  @ApiOperation({ summary: 'Get available registration slot count' })
+  @ApiOperation({ summary: 'Get available registration slot counts per school and professional pool' })
   @ApiOkResponse({
-    description: 'Returns how many slots are registered and remaining.',
+    description: 'Returns slot counts per school (50 each) and professional pool (100 total).',
     schema: {
       example: {
-        registered: 42,
-        remaining: 208,
+        schools: [
+          { school: 'Ateneo De Naga', registered: 10, limit: 50, remaining: 40 },
+          { school: 'Naga College Foundation', registered: 5, limit: 50, remaining: 45 },
+          {
+            school: 'Bicol State College of Applied Sciences and Technology',
+            registered: 20,
+            limit: 50,
+            remaining: 30,
+          },
+        ],
+        professionals: { registered: 8, remaining: 92, limit: 100 },
       },
     },
   })
