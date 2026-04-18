@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -17,6 +18,7 @@ import {
   SCHOOL_SLOT_LIMIT,
   WORKSHOP_SLOT_LIMIT,
 } from './registration.schema';
+import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
 
 const WORKSHOP_LABELS: Record<string, string> = {
   workshop1: 'Workshop 1 — DIA Lab 1 (Day 1)',
@@ -39,11 +41,17 @@ const isPartnerSchool = (affiliation: string): boolean =>
   (Object.values(School) as string[]).includes(affiliation);
 
 @Injectable()
-export class RegistrationService {
+export class RegistrationService implements OnModuleInit {
   constructor(
     @InjectModel(Registration.name)
     private registrationModel: Model<RegistrationDocument>,
+    private readonly googleSheetsService: GoogleSheetsService,
   ) {}
+
+  async onModuleInit() {
+    const all = await this.registrationModel.find().exec();
+    await this.googleSheetsService.syncAll(all);
+  }
 
   async register(dto: CreateRegistrationDto): Promise<Registration> {
     // 1. Overall cap
@@ -113,7 +121,9 @@ export class RegistrationService {
     }
 
     const registration = new this.registrationModel(dto);
-    return registration.save();
+    const saved = await registration.save();
+    await this.googleSheetsService.appendRow(saved);
+    return saved;
   }
 
   async getCount() {

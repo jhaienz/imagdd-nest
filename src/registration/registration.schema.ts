@@ -65,6 +65,9 @@ export class Registration {
 
   @Prop({ required: false, enum: WorkshopDay2 })
   workshopDay2?: WorkshopDay2;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const RegistrationSchema = SchemaFactory.createForClass(Registration);
