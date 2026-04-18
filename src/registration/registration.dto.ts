@@ -2,7 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
-  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -46,10 +45,6 @@ export class CreateRegistrationDto {
   })
   @IsString()
   @IsNotEmpty()
-  @ValidateIf((o) => o.designation === Designation.STUDENT)
-  @IsIn(Object.values(School), {
-    message: `Partner-school students must use one of: ${Object.values(School).join(', ')}. Other-school students are placed in the general pool.`,
-  })
   affiliation: string;
 
   @ApiProperty({ example: '+63 912 345 6789' })
