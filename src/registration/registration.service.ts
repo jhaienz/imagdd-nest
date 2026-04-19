@@ -4,8 +4,8 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+  import { InjectModel } from '@nestjs/mongoose';
+  import { Model } from 'mongoose';
 import { CreateRegistrationDto } from './registration.dto';
 import {
   AttendanceType,
@@ -19,10 +19,10 @@ import {
   WORKSHOP_SLOT_LIMIT,
 } from './registration.schema';
 import { GoogleSheetsService } from '../google-sheets/google-sheets.service';
-
+  
 const WORKSHOP_LABELS: Record<string, string> = {
   workshop1: 'Workshop 1 — DIA Lab 1 (Day 1)',
-  workshop2: 'Workshop 2 — DIA Lab 2 (Day 1)',
+  workshop3: 'Workshop 2 — DIA Lab 2 (Day 1)',
   workshop4: 'Workshop 4 — DIA Lab 1 (Day 2)',
   workshop5: 'Workshop 5 — DIA Lab 2 (Day 2)',
 };
