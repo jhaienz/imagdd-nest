@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { google, sheets_v4 } from 'googleapis';
+import { auth, sheets, sheets_v4 } from '@googleapis/sheets';
 import { RegistrationDocument } from '../registration/registration.schema';
 
 const HEADERS = [
@@ -36,11 +36,11 @@ export class GoogleSheetsService implements OnModuleInit {
       const credentials = JSON.parse(
         Buffer.from(credentialsB64, 'base64').toString('utf-8'),
       );
-      const auth = new google.auth.GoogleAuth({
+      const googleAuth = new auth.GoogleAuth({
         credentials,
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
       });
-      this.sheets = google.sheets({ version: 'v4', auth });
+      this.sheets = sheets({ version: 'v4', auth: googleAuth });
       this.logger.log('Google Sheets client initialised.');
     } catch (err) {
       this.logger.error('Failed to initialise Google Sheets client.', err);
