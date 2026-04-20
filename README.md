@@ -2,7 +2,8 @@
 
 Backend API for the IMAGDD event registration form built with NestJS and MongoDB.
 
-- Max **250 overall slots**
+- Fee is **250 per day**
+- Max **500 total registrations** across both days
 - **50 slots per partner school** (students only)
 - **100 slots** for professionals, educators, animators, LGU, and other-school students (shared pool)
 - **30 slots per workshop** (students choosing workshop pick one per day)
@@ -19,7 +20,9 @@ Backend API for the IMAGDD event registration form built with NestJS and MongoDB
 | NCF — Naga College Foundation (students) | 50 |
 | BISCAST — Bicol State College of Applied Sciences and Technology (students) | 50 |
 | Professionals, Educators, Animators, LGU, Other-school Students | 100 |
-| **Total** | **250** |
+| **Total** | **500** |
+
+> Registration fee is **250 per day**. If a participant attends both days, they are counted twice.
 
 > Students from other schools (not ADNU/NCF/BISCAST) are placed in the general 100-slot pool.
 
@@ -240,7 +243,13 @@ Check slot counts across all groups.
 
 ```json
 {
-  "overall": { "registered": 43, "remaining": 207, "limit": 250 },
+  "fees": { "perDay": 250, "max": 500 },
+  "overall": { "registered": 43, "remaining": 457, "limit": 500 },
+  "attendanceDays": {
+    "day1": { "registered": 22, "remaining": 228, "limit": 250 },
+    "day2": { "registered": 21, "remaining": 229, "limit": 250 },
+    "unassigned": 0
+  },
   "schools": [
     { "school": "ADNU", "registered": 10, "limit": 50, "remaining": 40 },
     { "school": "NCF", "registered": 5, "limit": 50, "remaining": 45 },

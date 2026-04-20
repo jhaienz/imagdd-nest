@@ -9,6 +9,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateRegistrationDto } from './registration.dto';
+import { AttendanceDay } from './registration.schema';
 import { RegistrationService } from './registration.service';
 
 @ApiTags('Registration')
@@ -32,6 +33,7 @@ export class RegistrationController {
           designation: 'student',
           affiliation: 'ADNU',
           contactNumber: '+63 912 345 6789',
+          attendanceDay: AttendanceDay.DAY_1,
           attendanceType: 'workshop',
           workshopDay1: 'workshop1',
           workshopDay2: 'workshop4',
@@ -70,10 +72,16 @@ export class RegistrationController {
   @ApiOperation({ summary: 'Get available registration slot counts' })
   @ApiOkResponse({
     description:
-      'Returns overall, per-school, professional pool, attendance type, and per-workshop counts.',
+      'Returns fee totals, overall capacity, per-day counts, per-school counts, professional pool, attendance type, and per-workshop counts.',
     schema: {
       example: {
-        overall: { registered: 43, remaining: 207, limit: 250 },
+        fees: { perDay: 250, max: 500 },
+        overall: { registered: 43, remaining: 457, limit: 500 },
+        attendanceDays: {
+          day1: { registered: 22, remaining: 228, limit: 250 },
+          day2: { registered: 21, remaining: 229, limit: 250 },
+          unassigned: 0,
+        },
         schools: [
           { school: 'ADNU', registered: 10, limit: 50, remaining: 40 },
           { school: 'NCF', registered: 5, limit: 50, remaining: 45 },

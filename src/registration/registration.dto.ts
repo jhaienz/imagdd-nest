@@ -9,6 +9,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import {
+  AttendanceDay,
   AttendanceType,
   Designation,
   School,
@@ -20,12 +21,12 @@ export class CreateRegistrationDto {
   @ApiProperty({ example: 'juan.dela.cruz@email.com' })
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'Juan Dela Cruz' })
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  fullName!: string;
 
   @ApiProperty({
     enum: Designation,
@@ -36,7 +37,7 @@ export class CreateRegistrationDto {
     message:
       'designation must be one of: student, game developer, educator, industry professional, animator, lgu, other',
   })
-  designation: Designation;
+  designation!: Designation;
 
   @ApiProperty({
     example: School.ADNU,
@@ -45,15 +46,25 @@ export class CreateRegistrationDto {
   })
   @IsString()
   @IsNotEmpty()
-  affiliation: string;
+  affiliation!: string;
 
   @ApiProperty({ example: '+63 912 345 6789' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^[+]?[\d\s\-().]{7,20}$/, {
+  @Matches(/^[+]?\d[\d\s\-().]{6,19}$/, {
     message: 'contactNumber must be a valid phone number',
   })
-  contactNumber: string;
+  contactNumber!: string;
+
+  @ApiProperty({
+    enum: AttendanceDay,
+    example: AttendanceDay.DAY_1,
+    description: 'Select which day to attend: day 1 or day 2',
+  })
+  @IsEnum(AttendanceDay, {
+    message: 'attendanceDay must be either: day 1 or day 2',
+  })
+  attendanceDay!: AttendanceDay;
 
   @ApiProperty({
     enum: AttendanceType,
@@ -63,7 +74,7 @@ export class CreateRegistrationDto {
   @IsEnum(AttendanceType, {
     message: 'attendanceType must be either: seminar or workshop',
   })
-  attendanceType: AttendanceType;
+  attendanceType!: AttendanceType;
 
   @ApiProperty({
     enum: WorkshopDay1,

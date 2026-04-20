@@ -8,10 +8,13 @@ import {
   import { Model } from 'mongoose';
 import { CreateRegistrationDto } from './registration.dto';
 import {
+  AttendanceDay,
   AttendanceType,
   Designation,
+  MAX_REGISTRATION_FEE,
   OVERALL_SLOT_LIMIT,
   PROFESSIONAL_SLOT_LIMIT,
+  REGISTRATION_FEE_PER_DAY,
   Registration,
   RegistrationDocument,
   School,
@@ -129,8 +132,17 @@ export class RegistrationService implements OnModuleInit {
   async getCount() {
     const partnerSchools = Object.values(School);
 
-    const [schools, professionals, total, seminarCount, workshopCount, workshops] =
-      await Promise.all([
+    const [
+      schools,
+      professionals,
+      total,
+      seminarCount,
+      workshopCount,
+      day1Count,
+      day2Count,
+      unassignedCount,
+      workshops,
+    ] = await Promise.all([
         Promise.all(
           partnerSchools.map(async (school) => ({
             school,
@@ -150,6 +162,15 @@ export class RegistrationService implements OnModuleInit {
         this.registrationModel.countDocuments(),
         this.registrationModel.countDocuments({ attendanceType: AttendanceType.SEMINAR }),
         this.registrationModel.countDocuments({ attendanceType: AttendanceType.WORKSHOP }),
+        this.registrationModel.countDocuments({ attendanceDay: AttendanceDay.DAY_1 }),
+        this.registrationModel.countDocuments({ attendanceDay: AttendanceDay.DAY_2 }),
+        this.registrationModel.countDocuments({
+          $or: [
+            { attendanceDay: { $exists: false } },
+            { attendanceDay: null },
+            { attendanceDay: '' },
+          ],
+        }),
         Promise.all(
           ['workshop1', 'workshop2', 'workshop4', 'workshop5'].map(async (w) => {
             const field = w.startsWith('workshop') && ['workshop1', 'workshop2'].includes(w)
@@ -179,6 +200,23 @@ export class RegistrationService implements OnModuleInit {
         registered: professionals,
         remaining: PROFESSIONAL_SLOT_LIMIT - professionals,
         limit: PROFESSIONAL_SLOT_LIMIT,
+      },
+      fees: {
+        perDay: REGISTRATION_FEE_PER_DAY,
+        max: MAX_REGISTRATION_FEE,
+      },
+      attendanceDays: {
+        day1: {
+          registered: day1Count,
+          remaining: Math.max(0, 250 - day1Count),
+          limit: 250,
+        },
+        day2: {
+          registered: day2Count,
+          remaining: Math.max(0, 250 - day2Count),
+          limit: 250,
+        },
+        unassigned: unassignedCount,
       },
       attendance: {
         seminar: seminarCount,
