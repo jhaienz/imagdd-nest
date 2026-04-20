@@ -10,6 +10,7 @@ import { CreateRegistrationDto } from './registration.dto';
 import {
   AttendanceDay,
   AttendanceType,
+  DAILY_SLOT_LIMIT,
   Designation,
   MAX_REGISTRATION_FEE,
   OVERALL_SLOT_LIMIT,
@@ -39,6 +40,11 @@ const PROFESSIONAL_DESIGNATIONS = [
   Designation.OTHER,
 ];
 
+const DAY_QUERY_MAP = {
+  day1: AttendanceDay.DAY_1,
+  day2: AttendanceDay.DAY_2,
+} as const;
+
 // Partner-school students use the school pool; everyone else uses the professional pool
 const isPartnerSchool = (affiliation: string): boolean =>
   (Object.values(School) as string[]).includes(affiliation);
@@ -57,6 +63,16 @@ export class RegistrationService implements OnModuleInit {
   }
 
   async register(dto: CreateRegistrationDto): Promise<Registration> {
+    // 1. Per-day cap
+    const dayCount = await this.registrationModel.countDocuments({
+      attendanceDay: dto.attendanceDay,
+    });
+    if (dayCount >= DAILY_SLOT_LIMIT) {
+      throw new ServiceUnavailableException(
+        `Registration is full for ${dto.attendanceDay} (${DAILY_SLOT_LIMIT}-slot limit reached).`,
+      );
+    }
+
     // 1. Overall cap
     const totalCount = await this.registrationModel.countDocuments();
     if (totalCount >= OVERALL_SLOT_LIMIT) {
@@ -78,15 +94,17 @@ export class RegistrationService implements OnModuleInit {
       const schoolCount = await this.registrationModel.countDocuments({
         affiliation: dto.affiliation,
         designation: Designation.STUDENT,
+        attendanceDay: dto.attendanceDay,
       });
       if (schoolCount >= SCHOOL_SLOT_LIMIT) {
         throw new ServiceUnavailableException(
-          `Registration slots for ${dto.affiliation} are full (${SCHOOL_SLOT_LIMIT}-slot limit reached).`,
+          `Registration slots for ${dto.affiliation} on ${dto.attendanceDay} are full (${SCHOOL_SLOT_LIMIT}-slot limit reached).`,
         );
       }
     } else {
       // Other-school students and all non-students share the professional pool
       const professionalCount = await this.registrationModel.countDocuments({
+        attendanceDay: dto.attendanceDay,
         $or: [
           { designation: { $in: PROFESSIONAL_DESIGNATIONS } },
           { designation: Designation.STUDENT, affiliation: { $nin: Object.values(School) } },
@@ -94,7 +112,7 @@ export class RegistrationService implements OnModuleInit {
       });
       if (professionalCount >= PROFESSIONAL_SLOT_LIMIT) {
         throw new ServiceUnavailableException(
-          `Registration slots for this group are full (${PROFESSIONAL_SLOT_LIMIT}-slot limit reached).`,
+          `Registration slots for this group on ${dto.attendanceDay} are full (${PROFESSIONAL_SLOT_LIMIT}-slot limit reached).`,
         );
       }
     }
@@ -131,10 +149,18 @@ export class RegistrationService implements OnModuleInit {
 
   async getCount() {
     const partnerSchools = Object.values(School);
+    const professionalPoolQuery = {
+      $or: [
+        { designation: { $in: PROFESSIONAL_DESIGNATIONS } },
+        { designation: Designation.STUDENT, affiliation: { $nin: partnerSchools } },
+      ],
+    };
 
     const [
       schools,
       professionals,
+      professionalsDay1,
+      professionalsDay2,
       total,
       seminarCount,
       workshopCount,
@@ -144,20 +170,51 @@ export class RegistrationService implements OnModuleInit {
       workshops,
     ] = await Promise.all([
         Promise.all(
-          partnerSchools.map(async (school) => ({
-            school,
-            registered: await this.registrationModel.countDocuments({
-              affiliation: school,
-              designation: Designation.STUDENT,
-            }),
-            limit: SCHOOL_SLOT_LIMIT,
-          })),
+          partnerSchools.map(async (school) => {
+            const [totalRegistered, day1Registered, day2Registered] = await Promise.all([
+              this.registrationModel.countDocuments({
+                affiliation: school,
+                designation: Designation.STUDENT,
+              }),
+              this.registrationModel.countDocuments({
+                affiliation: school,
+                designation: Designation.STUDENT,
+                attendanceDay: DAY_QUERY_MAP.day1,
+              }),
+              this.registrationModel.countDocuments({
+                affiliation: school,
+                designation: Designation.STUDENT,
+                attendanceDay: DAY_QUERY_MAP.day2,
+              }),
+            ]);
+
+            return {
+              school,
+              registered: totalRegistered,
+              limit: SCHOOL_SLOT_LIMIT,
+              byDay: {
+                day1: {
+                  registered: day1Registered,
+                  limit: SCHOOL_SLOT_LIMIT,
+                  remaining: Math.max(0, SCHOOL_SLOT_LIMIT - day1Registered),
+                },
+                day2: {
+                  registered: day2Registered,
+                  limit: SCHOOL_SLOT_LIMIT,
+                  remaining: Math.max(0, SCHOOL_SLOT_LIMIT - day2Registered),
+                },
+              },
+            };
+          }),
         ),
+        this.registrationModel.countDocuments(professionalPoolQuery),
         this.registrationModel.countDocuments({
-          $or: [
-            { designation: { $in: PROFESSIONAL_DESIGNATIONS } },
-            { designation: Designation.STUDENT, affiliation: { $nin: partnerSchools } },
-          ],
+          ...professionalPoolQuery,
+          attendanceDay: DAY_QUERY_MAP.day1,
+        }),
+        this.registrationModel.countDocuments({
+          ...professionalPoolQuery,
+          attendanceDay: DAY_QUERY_MAP.day2,
         }),
         this.registrationModel.countDocuments(),
         this.registrationModel.countDocuments({ attendanceType: AttendanceType.SEMINAR }),
@@ -200,6 +257,18 @@ export class RegistrationService implements OnModuleInit {
         registered: professionals,
         remaining: PROFESSIONAL_SLOT_LIMIT - professionals,
         limit: PROFESSIONAL_SLOT_LIMIT,
+        byDay: {
+          day1: {
+            registered: professionalsDay1,
+            limit: PROFESSIONAL_SLOT_LIMIT,
+            remaining: Math.max(0, PROFESSIONAL_SLOT_LIMIT - professionalsDay1),
+          },
+          day2: {
+            registered: professionalsDay2,
+            limit: PROFESSIONAL_SLOT_LIMIT,
+            remaining: Math.max(0, PROFESSIONAL_SLOT_LIMIT - professionalsDay2),
+          },
+        },
       },
       fees: {
         perDay: REGISTRATION_FEE_PER_DAY,
@@ -208,13 +277,13 @@ export class RegistrationService implements OnModuleInit {
       attendanceDays: {
         day1: {
           registered: day1Count,
-          remaining: Math.max(0, 250 - day1Count),
-          limit: 250,
+          remaining: Math.max(0, DAILY_SLOT_LIMIT - day1Count),
+          limit: DAILY_SLOT_LIMIT,
         },
         day2: {
           registered: day2Count,
-          remaining: Math.max(0, 250 - day2Count),
-          limit: 250,
+          remaining: Math.max(0, DAILY_SLOT_LIMIT - day2Count),
+          limit: DAILY_SLOT_LIMIT,
         },
         unassigned: unassignedCount,
       },

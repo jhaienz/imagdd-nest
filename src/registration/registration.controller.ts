@@ -83,11 +83,46 @@ export class RegistrationController {
           unassigned: 0,
         },
         schools: [
-          { school: 'ADNU', registered: 10, limit: 50, remaining: 40 },
-          { school: 'NCF', registered: 5, limit: 50, remaining: 45 },
-          { school: 'BISCAST', registered: 20, limit: 50, remaining: 30 },
+          {
+            school: 'ADNU',
+            registered: 10,
+            limit: 50,
+            remaining: 40,
+            byDay: {
+              day1: { registered: 10, remaining: 40, limit: 50 },
+              day2: { registered: 0, remaining: 50, limit: 50 },
+            },
+          },
+          {
+            school: 'NCF',
+            registered: 5,
+            limit: 50,
+            remaining: 45,
+            byDay: {
+              day1: { registered: 2, remaining: 48, limit: 50 },
+              day2: { registered: 3, remaining: 47, limit: 50 },
+            },
+          },
+          {
+            school: 'BISCAST',
+            registered: 20,
+            limit: 50,
+            remaining: 30,
+            byDay: {
+              day1: { registered: 12, remaining: 38, limit: 50 },
+              day2: { registered: 8, remaining: 42, limit: 50 },
+            },
+          },
         ],
-        professionals: { registered: 8, remaining: 92, limit: 100 },
+        professionals: {
+          registered: 8,
+          remaining: 92,
+          limit: 100,
+          byDay: {
+            day1: { registered: 5, remaining: 95, limit: 100 },
+            day2: { registered: 3, remaining: 97, limit: 100 },
+          },
+        },
         attendance: { seminar: 25, workshop: 18 },
         workshops: [
           { id: 'workshop1', label: 'Workshop 1 — DIA Lab 1 (Day 1)', registered: 12, limit: 30, remaining: 18 },

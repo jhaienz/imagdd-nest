@@ -42,6 +42,7 @@
 
   export const REGISTRATION_FEE_PER_DAY = 250;
   export const MAX_REGISTRATION_FEE = 500;
+  export const DAILY_SLOT_LIMIT = 250;
   export const SCHOOL_SLOT_LIMIT = 50;
   export const PROFESSIONAL_SLOT_LIMIT = 100;
   export const OVERALL_SLOT_LIMIT = 500;
