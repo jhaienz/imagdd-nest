@@ -4,9 +4,16 @@ import {
   OnModuleInit,
   ServiceUnavailableException,
 } from '@nestjs/common';
-  import { InjectModel } from '@nestjs/mongoose';
-  import { Model } from 'mongoose';
-import { CreateRegistrationDto } from './registration.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import {
+  CORE_DESIGNATIONS,
+  CreateRegistrationDto,
+  FILTER_WORKSHOPS,
+  FilterRegistrationsDto,
+  OTHER_DESIGNATIONS_FILTER,
+  OTHER_SCHOOLS_FILTER,
+} from './registration.dto';
 import {
   AttendanceDay,
   AttendanceType,
@@ -48,6 +55,9 @@ const DAY_QUERY_MAP = {
 // Partner-school students use the school pool; everyone else uses the professional pool
 const isPartnerSchool = (affiliation: string): boolean =>
   (Object.values(School) as string[]).includes(affiliation);
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 @Injectable()
 export class RegistrationService implements OnModuleInit {
@@ -145,6 +155,100 @@ export class RegistrationService implements OnModuleInit {
     const saved = await registration.save();
     await this.googleSheetsService.appendRow(saved);
     return saved;
+  }
+
+  async getRegistrations(filters: FilterRegistrationsDto): Promise<Registration[]> {
+    const query: Record<string, unknown> = {};
+    const partnerSchools = Object.values(School);
+
+    if (filters.name?.trim()) {
+      query.fullName = {
+        $regex: escapeRegExp(filters.name.trim()),
+        $options: 'i',
+      };
+    }
+
+    if (filters.attendanceDay) {
+      query.attendanceDay = filters.attendanceDay;
+    }
+
+    if (filters.schools?.length) {
+      const includeOtherSchools = filters.schools.includes(OTHER_SCHOOLS_FILTER);
+      const explicitSchools = filters.schools.filter(
+        (school) => school !== OTHER_SCHOOLS_FILTER,
+      );
+
+      if (includeOtherSchools && explicitSchools.length) {
+        query.$and = [
+          ...(Array.isArray(query.$and)
+            ? (query.$and as Record<string, unknown>[])
+            : []),
+          {
+            $or: [
+              { affiliation: { $in: explicitSchools } },
+              { affiliation: { $nin: partnerSchools } },
+            ],
+          },
+        ];
+      } else if (includeOtherSchools) {
+        query.affiliation = { $nin: partnerSchools };
+      } else {
+        query.affiliation = { $in: explicitSchools };
+      }
+    }
+
+    if (filters.designations?.length) {
+      const includeOthers = filters.designations.includes(OTHER_DESIGNATIONS_FILTER);
+      const explicitDesignations = filters.designations.filter(
+        (designation) => designation !== OTHER_DESIGNATIONS_FILTER,
+      );
+
+      if (includeOthers && explicitDesignations.length) {
+        query.$and = [
+          ...(Array.isArray(query.$and)
+            ? (query.$and as Record<string, unknown>[])
+            : []),
+          {
+            $or: [
+              { designation: { $in: explicitDesignations } },
+              { designation: { $nin: CORE_DESIGNATIONS } },
+            ],
+          },
+        ];
+      } else if (includeOthers) {
+        query.designation = { $nin: CORE_DESIGNATIONS };
+      } else {
+        query.designation = { $in: explicitDesignations };
+      }
+    }
+
+    if (filters.workshops?.length) {
+      const day1WorkshopSet = new Set<string>([FILTER_WORKSHOPS[0], FILTER_WORKSHOPS[1]]);
+      const day2WorkshopSet = new Set<string>([FILTER_WORKSHOPS[2], FILTER_WORKSHOPS[3]]);
+
+      const day1Workshops = filters.workshops.filter((workshop) => day1WorkshopSet.has(workshop));
+      const day2Workshops = filters.workshops.filter((workshop) => day2WorkshopSet.has(workshop));
+
+      const workshopClauses: Record<string, unknown>[] = [];
+
+      if (day1Workshops.length) {
+        workshopClauses.push({ workshopDay1: { $in: day1Workshops } });
+      }
+
+      if (day2Workshops.length) {
+        workshopClauses.push({ workshopDay2: { $in: day2Workshops } });
+      }
+
+      if (workshopClauses.length === 1) {
+        Object.assign(query, workshopClauses[0]);
+      }
+
+      if (workshopClauses.length > 1) {
+        query.$or = workshopClauses;
+      }
+    }
+
+    return this.registrationModel.find(query).sort({ createdAt: -1 }).exec();
   }
 
   async getCount() {

@@ -1,0 +1,79 @@
+@baseUrl = http://localhost:3000
+
+### Health check
+GET {{baseUrl}}/
+
+### Register participant - Seminar
+POST {{baseUrl}}/registration
+Content-Type: application/json
+
+{
+  "email": "juan.dela.cruz@email.com",
+  "fullName": "Juan Dela Cruz",
+  "designation": "educator",
+  "affiliation": "Ateneo De Naga University",
+  "contactNumber": "+63 912 345 6789",
+  "attendanceDay": "day 1",
+  "attendanceType": "seminar"
+}
+
+### Register participant - Student Workshop
+POST {{baseUrl}}/registration
+Content-Type: application/json
+
+{
+  "email": "maria.santos@school.edu.ph",
+  "fullName": "Maria Santos",
+  "designation": "student",
+  "affiliation": "ADNU",
+  "contactNumber": "+63 917 000 1234",
+  "attendanceDay": "day 1",
+  "attendanceType": "workshop",
+  "workshopDay1": "workshop1",
+  "workshopDay2": "workshop4"
+}
+
+### Get all registrations
+GET {{baseUrl}}/registration
+
+### Filter registrations by name
+GET {{baseUrl}}/registration?name=juan
+
+### Filter registrations by attendance day
+GET {{baseUrl}}/registration?attendanceDay=day%201
+
+### Filter registrations by workshops
+GET {{baseUrl}}/registration?workshops=workshop1,workshop4
+
+### Filter registrations by schools
+GET {{baseUrl}}/registration?schools=ADNU,NCF
+
+### Filter registrations by schools (other = not ADNU/NCF/BISCAST)
+GET {{baseUrl}}/registration?schools=other
+
+### Filter registrations by designations
+GET {{baseUrl}}/registration?designations=student,educator
+
+### Filter registrations by designations (others = not student/educator/game developer/industry professional/lgu)
+GET {{baseUrl}}/registration?designations=others
+
+### Combined registration filters
+GET {{baseUrl}}/registration?attendanceDay=day%201&workshops=workshop1,workshop4&schools=ADNU&designations=student
+
+### Get registration slot counts
+GET {{baseUrl}}/registration/slots
+
+### Submit sponsorship inquiry
+POST {{baseUrl}}/sponsorship
+Content-Type: application/json
+
+{
+  "companyName": "Game Studio PH",
+  "companyWebsite": "https://gamestudioph.example",
+  "companyDescription": "Indie game studio and education partner.",
+  "contactPerson": "Ana Reyes",
+  "emailAdress": "ana@gamestudioph.example",
+  "contactNumber": "+63 917 555 0101",
+  "sponsorshipDescription": "Booth and prize support",
+  "comments": "Available for a quick call next week"
+}
