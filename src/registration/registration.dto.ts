@@ -168,6 +168,14 @@ export class CreateRegistrationDto {
 
 export class FilterRegistrationsDto {
   @ApiPropertyOptional({
+    example: 'juan',
+    description: 'Search by participant full name (case-insensitive, partial match).',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({
     enum: AttendanceDay,
     example: AttendanceDay.DAY_1,
     description: 'Filter by attendance day',

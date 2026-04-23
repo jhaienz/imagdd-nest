@@ -36,6 +36,9 @@ Content-Type: application/json
 ### Get all registrations
 GET {{baseUrl}}/registration
 
+### Filter registrations by name
+GET {{baseUrl}}/registration?name=juan
+
 ### Filter registrations by attendance day
 GET {{baseUrl}}/registration?attendanceDay=day%201
 

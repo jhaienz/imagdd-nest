@@ -50,6 +50,9 @@ const PROFESSIONAL_DESIGNATIONS = [
 const isPartnerSchool = (affiliation: string): boolean =>
   (Object.values(School) as string[]).includes(affiliation);
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 @Injectable()
 export class RegistrationService implements OnModuleInit {
   constructor(
@@ -139,6 +142,13 @@ export class RegistrationService implements OnModuleInit {
   async getRegistrations(filters: FilterRegistrationsDto): Promise<Registration[]> {
     const query: Record<string, unknown> = {};
     const partnerSchools = Object.values(School);
+
+    if (filters.name?.trim()) {
+      query.fullName = {
+        $regex: escapeRegExp(filters.name.trim()),
+        $options: 'i',
+      };
+    }
 
     if (filters.attendanceDay) {
       query.attendanceDay = filters.attendanceDay;
