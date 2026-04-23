@@ -75,11 +75,44 @@ http://localhost:3000
 
 ## Endpoints
 
+### GET `/`
+
+Health/root route.
+
+**Sample request (curl)**
+
+```bash
+curl -X GET http://localhost:3000/
+```
+
+**Sample request (frontend fetch)**
+
+```ts
+const res = await fetch('http://localhost:3000/');
+const data = await res.text();
+```
+
+---
+
 ### POST `/registration`
 
-Register a new participant.
+Register a participant.
 
-**Request Body — Seminar (any designation)**
+**Required fields**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `email` | string | Yes | Valid email. Duplicates are rejected. |
+| `fullName` | string | Yes | Full name of participant. |
+| `designation` | string | Yes | `student`, `game developer`, `educator`, `industry professional`, `animator`, `lgu`, `other`. |
+| `affiliation` | string | Yes | School/company/organization. |
+| `contactNumber` | string | Yes | Valid phone format. |
+| `attendanceDay` | string | Yes | `day 1` or `day 2`. |
+| `attendanceType` | string | Yes | `seminar` or `workshop`. |
+| `workshopDay1` | string | Conditional | Required if `designation=student` and `attendanceType=workshop`. Values: `workshop1`, `workshop2`. |
+| `workshopDay2` | string | Conditional | Required if `designation=student` and `attendanceType=workshop`. Values: `workshop4`, `workshop5`. |
+
+**Sample request body (seminar)**
 
 ```json
 {
@@ -88,11 +121,12 @@ Register a new participant.
   "designation": "educator",
   "affiliation": "Ateneo De Naga University",
   "contactNumber": "+63 912 345 6789",
+  "attendanceDay": "day 1",
   "attendanceType": "seminar"
 }
 ```
 
-**Request Body — Workshop (students only)**
+**Sample request body (student + workshop)**
 
 ```json
 {
@@ -101,169 +135,178 @@ Register a new participant.
   "designation": "student",
   "affiliation": "ADNU",
   "contactNumber": "+63 917 000 1234",
+  "attendanceDay": "day 1",
   "attendanceType": "workshop",
   "workshopDay1": "workshop1",
   "workshopDay2": "workshop4"
 }
 ```
 
-**Fields**
+**Sample request (curl)**
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `email` | string | Yes | Valid email. Duplicates are rejected. |
-| `fullName` | string | Yes | Full name of the participant. |
-| `designation` | string | Yes | See valid values below. |
-| `affiliation` | string | Yes | Partner-school students: `ADNU`, `NCF`, or `BISCAST`. Others: free text. |
-| `contactNumber` | string | Yes | Valid phone number (7–20 digits, `+` and spaces allowed). |
-| `attendanceType` | string | Yes | `seminar` or `workshop`. |
-| `workshopDay1` | string | Conditional | Required if student + workshop. `workshop1` or `workshop2`. |
-| `workshopDay2` | string | Conditional | Required if student + workshop. `workshop4` or `workshop5`. |
-
-**Valid designations**
-
-| Value | Label |
-|---|---|
-| `student` | Student |
-| `game developer` | Game Developer |
-| `educator` | Educator |
-| `industry professional` | Industry Professional |
-| `animator` | Animator |
-| `lgu` | Local Government Unit (LGU) |
-| `other` | Other (free text sent by frontend) |
-
-**Valid attendance types**
-
-| Value | Description |
-|---|---|
-| `seminar` | Attend talk/lecture sessions |
-| `workshop` | Attend hands-on DIA Lab sessions (students only pick workshops) |
-
-**Valid workshop values**
-
-| Field | Value | Session |
-|---|---|---|
-| `workshopDay1` | `workshop1` | DIA Lab 1 — Marketing your Game |
-| `workshopDay1` | `workshop2` | DIA Lab 2 — Visual Development & World-Building |
-| `workshopDay2` | `workshop4` | DIA Lab 1 — Portfolio Masterclass: Getting Studio-Ready |
-| `workshopDay2` | `workshop5` | DIA Lab 2 — Game Design Workshop |
-
-**Responses**
-
-`201 Created` — Registration successful
-
-```json
-{
-  "message": "Registration successful.",
-  "data": {
-    "_id": "664a1f2e3b1c2d4e5f6a7b8c",
+```bash
+curl -X POST http://localhost:3000/registration \
+  -H "Content-Type: application/json" \
+  -d '{
     "email": "maria.santos@school.edu.ph",
     "fullName": "Maria Santos",
     "designation": "student",
     "affiliation": "ADNU",
     "contactNumber": "+63 917 000 1234",
+    "attendanceDay": "day 1",
     "attendanceType": "workshop",
     "workshopDay1": "workshop1",
-    "workshopDay2": "workshop4",
-    "createdAt": "2026-04-17T08:00:00.000Z",
-    "updatedAt": "2026-04-17T08:00:00.000Z"
-  }
-}
+    "workshopDay2": "workshop4"
+  }'
 ```
 
-`400 Bad Request` — Validation error
+**Sample request (frontend fetch)**
 
-```json
-{
-  "statusCode": 400,
-  "message": ["attendanceType must be either: seminar or workshop"],
-  "error": "Bad Request"
-}
+```ts
+const payload = {
+  email: 'maria.santos@school.edu.ph',
+  fullName: 'Maria Santos',
+  designation: 'student',
+  affiliation: 'ADNU',
+  contactNumber: '+63 917 000 1234',
+  attendanceDay: 'day 1',
+  attendanceType: 'workshop',
+  workshopDay1: 'workshop1',
+  workshopDay2: 'workshop4',
+};
+
+const res = await fetch('http://localhost:3000/registration', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+
+const data = await res.json();
 ```
 
-`400 Bad Request` — Duplicate email
+---
 
-```json
-{
-  "statusCode": 400,
-  "message": "This email address is already registered.",
-  "error": "Bad Request"
-}
+### GET `/registration`
+
+List registrations. All filters are optional.
+
+**Supported query params**
+
+| Param | Type | Example |
+|---|---|---|
+| `attendanceDay` | string | `day 1` |
+| `workshops` | string or repeated param | `workshop1,workshop4` |
+| `schools` | string or repeated param | `ADNU,NCF` |
+| `designations` | string or repeated param | `student,educator` |
+
+**Sample requests (curl)**
+
+```bash
+# no filters
+curl -X GET "http://localhost:3000/registration"
+
+# single filters
+curl -X GET "http://localhost:3000/registration?attendanceDay=day%201"
+curl -X GET "http://localhost:3000/registration?workshops=workshop1,workshop4"
+curl -X GET "http://localhost:3000/registration?schools=ADNU,NCF"
+curl -X GET "http://localhost:3000/registration?designations=student,educator"
+
+# combined filters
+curl -X GET "http://localhost:3000/registration?attendanceDay=day%201&workshops=workshop1,workshop4&schools=ADNU&designations=student"
 ```
 
-`503 Service Unavailable` — Overall slots full
+**Sample request (frontend fetch)**
 
-```json
-{
-  "statusCode": 503,
-  "message": "Registration is full. The 250-slot limit has been reached.",
-  "error": "Service Unavailable"
-}
-```
+```ts
+const params = new URLSearchParams({
+  attendanceDay: 'day 1',
+  workshops: 'workshop1,workshop4',
+  schools: 'ADNU',
+  designations: 'student',
+});
 
-`503 Service Unavailable` — School slots full
-
-```json
-{
-  "statusCode": 503,
-  "message": "Registration slots for ADNU are full (50-slot limit reached).",
-  "error": "Service Unavailable"
-}
-```
-
-`503 Service Unavailable` — Professional/general pool full
-
-```json
-{
-  "statusCode": 503,
-  "message": "Registration slots for this group are full (100-slot limit reached).",
-  "error": "Service Unavailable"
-}
-```
-
-`503 Service Unavailable` — Workshop slot full
-
-```json
-{
-  "statusCode": 503,
-  "message": "Workshop 1 — DIA Lab 1 (Day 1) is full (30-slot limit reached).",
-  "error": "Service Unavailable"
-}
+const res = await fetch(`http://localhost:3000/registration?${params.toString()}`);
+const data = await res.json();
 ```
 
 ---
 
 ### GET `/registration/slots`
 
-Check slot counts across all groups.
+Get slot summary counts.
 
-**Response**
+**Sample request (curl)**
 
-`200 OK`
+```bash
+curl -X GET http://localhost:3000/registration/slots
+```
+
+**Sample request (frontend fetch)**
+
+```ts
+const res = await fetch('http://localhost:3000/registration/slots');
+const data = await res.json();
+```
+
+---
+
+### POST `/sponsorship`
+
+Submit sponsorship inquiry.
+
+**Sample request body**
 
 ```json
 {
-  "fees": { "perDay": 250, "max": 500 },
-  "overall": { "registered": 43, "remaining": 457, "limit": 500 },
-  "attendanceDays": {
-    "day1": { "registered": 22, "remaining": 228, "limit": 250 },
-    "day2": { "registered": 21, "remaining": 229, "limit": 250 },
-    "unassigned": 0
-  },
-  "schools": [
-    { "school": "ADNU", "registered": 10, "limit": 50, "remaining": 40 },
-    { "school": "NCF", "registered": 5, "limit": 50, "remaining": 45 },
-    { "school": "BISCAST", "registered": 20, "limit": 50, "remaining": 30 }
-  ],
-  "professionals": { "registered": 8, "remaining": 92, "limit": 100 },
-  "attendance": { "seminar": 25, "workshop": 18 },
-  "workshops": [
-    { "id": "workshop1", "label": "Workshop 1 — DIA Lab 1 (Day 1)", "registered": 12, "limit": 30, "remaining": 18 },
-    { "id": "workshop2", "label": "Workshop 2 — DIA Lab 2 (Day 1)", "registered": 6, "limit": 30, "remaining": 24 },
-    { "id": "workshop4", "label": "Workshop 4 — DIA Lab 1 (Day 2)", "registered": 9, "limit": 30, "remaining": 21 },
-    { "id": "workshop5", "label": "Workshop 5 — DIA Lab 2 (Day 2)", "registered": 3, "limit": 30, "remaining": 27 }
-  ]
+  "companyName": "Game Studio PH",
+  "companyWebsite": "https://gamestudioph.example",
+  "companyDescription": "Indie game studio and education partner.",
+  "contactPerson": "Ana Reyes",
+  "emailAdress": "ana@gamestudioph.example",
+  "contactNumber": "+63 917 555 0101",
+  "sponsorshipDescription": "Booth and prize support",
+  "comments": "Available for a quick call next week"
 }
+```
+
+**Sample request (curl)**
+
+```bash
+curl -X POST http://localhost:3000/sponsorship \
+  -H "Content-Type: application/json" \
+  -d '{
+    "companyName": "Game Studio PH",
+    "companyWebsite": "https://gamestudioph.example",
+    "companyDescription": "Indie game studio and education partner.",
+    "contactPerson": "Ana Reyes",
+    "emailAdress": "ana@gamestudioph.example",
+    "contactNumber": "+63 917 555 0101",
+    "sponsorshipDescription": "Booth and prize support",
+    "comments": "Available for a quick call next week"
+  }'
+```
+
+**Sample request (frontend fetch)**
+
+```ts
+const payload = {
+  companyName: 'Game Studio PH',
+  companyWebsite: 'https://gamestudioph.example',
+  companyDescription: 'Indie game studio and education partner.',
+  contactPerson: 'Ana Reyes',
+  emailAdress: 'ana@gamestudioph.example',
+  contactNumber: '+63 917 555 0101',
+  sponsorshipDescription: 'Booth and prize support',
+  comments: 'Available for a quick call next week',
+};
+
+const res = await fetch('http://localhost:3000/sponsorship', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+});
+
+const data = await res.json();
 ```
 
 ---

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import {
   ApiBody,
   ApiCreatedResponse,
@@ -8,7 +8,7 @@ import {
   ApiBadRequestResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreateRegistrationDto } from './registration.dto';
+import { CreateRegistrationDto, FilterRegistrationsDto } from './registration.dto';
 import { AttendanceDay } from './registration.schema';
 import { RegistrationService } from './registration.service';
 
@@ -16,6 +16,42 @@ import { RegistrationService } from './registration.service';
 @Controller('registration')
 export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
+
+  @Get()
+  @ApiOperation({
+    summary:
+      'Get registrations with optional filters (attendance day, workshops, schools, designations)',
+  })
+  @ApiOkResponse({
+    description: 'Returns registrations filtered by the provided query parameters.',
+    schema: {
+      example: {
+        message: 'Registrations retrieved successfully.',
+        count: 2,
+        data: [
+          {
+            _id: '664a1f2e3b1c2d4e5f6a7b8c',
+            email: 'juan.dela.cruz@email.com',
+            fullName: 'Juan Dela Cruz',
+            designation: 'student',
+            affiliation: 'ADNU',
+            attendanceDay: 'day 1',
+            attendanceType: 'workshop',
+            workshopDay1: 'workshop1',
+            workshopDay2: 'workshop4',
+          },
+        ],
+      },
+    },
+  })
+  async getRegistrations(@Query() query: FilterRegistrationsDto) {
+    const data = await this.registrationService.getRegistrations(query);
+    return {
+      message: 'Registrations retrieved successfully.',
+      count: data.length,
+      data,
+    };
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

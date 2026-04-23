@@ -1,7 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -16,6 +19,54 @@ import {
   WorkshopDay1,
   WorkshopDay2,
 } from './registration.schema';
+
+const parseCsvToArray = ({ value }: { value: unknown }): string[] | undefined => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) =>
+        String(item)
+          .split(',')
+          .map((v) => v.trim()),
+      )
+      .filter(Boolean);
+  }
+
+  return String(value)
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+};
+
+export const FILTER_WORKSHOPS = [
+  WorkshopDay1.WORKSHOP1,
+  WorkshopDay1.WORKSHOP2,
+  WorkshopDay2.WORKSHOP4,
+  WorkshopDay2.WORKSHOP5,
+] as const;
+
+export type FilterWorkshop = (typeof FILTER_WORKSHOPS)[number];
+
+export const OTHER_SCHOOLS_FILTER = 'other';
+export const OTHER_DESIGNATIONS_FILTER = 'others';
+
+export const CORE_DESIGNATIONS = [
+  Designation.STUDENT,
+  Designation.EDUCATOR,
+  Designation.GAME_DEVELOPER,
+  Designation.INDUSTRY_PROFESSIONAL,
+  Designation.LGU,
+] as const;
+
+export const DESIGNATION_FILTER_OPTIONS = [
+  ...Object.values(Designation),
+  OTHER_DESIGNATIONS_FILTER,
+] as const;
+
+export type FilterDesignation = (typeof DESIGNATION_FILTER_OPTIONS)[number];
 
 export class CreateRegistrationDto {
   @ApiProperty({ example: 'juan.dela.cruz@email.com' })
@@ -113,4 +164,53 @@ export class CreateRegistrationDto {
   })
   @IsOptional()
   workshopDay2?: WorkshopDay2;
+}
+
+export class FilterRegistrationsDto {
+  @ApiPropertyOptional({
+    enum: AttendanceDay,
+    example: AttendanceDay.DAY_1,
+    description: 'Filter by attendance day',
+  })
+  @IsOptional()
+  @IsEnum(AttendanceDay)
+  attendanceDay?: AttendanceDay;
+
+  @ApiPropertyOptional({
+    type: [String],
+    enum: FILTER_WORKSHOPS,
+    example: [WorkshopDay1.WORKSHOP1, WorkshopDay2.WORKSHOP4],
+    description:
+      'Filter by one or more workshops. Supports comma-separated values or repeated query params.',
+  })
+  @IsOptional()
+  @Transform(parseCsvToArray)
+  @IsArray()
+  @IsEnum(FILTER_WORKSHOPS, { each: true })
+  workshops?: FilterWorkshop[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: [School.ADNU, OTHER_SCHOOLS_FILTER],
+    description:
+      'Filter by one or more schools/affiliations. Use "other" to include schools outside ADNU, NCF, and BISCAST. Supports comma-separated values or repeated query params.',
+  })
+  @IsOptional()
+  @Transform(parseCsvToArray)
+  @IsArray()
+  @IsString({ each: true })
+  schools?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    enum: DESIGNATION_FILTER_OPTIONS,
+    example: [Designation.STUDENT, OTHER_DESIGNATIONS_FILTER],
+    description:
+      'Filter by one or more designations. Use "others" to include designations outside student, educator, game developer, industry professional, and lgu. Supports comma-separated values or repeated query params.',
+  })
+  @IsOptional()
+  @Transform(parseCsvToArray)
+  @IsArray()
+  @IsIn(DESIGNATION_FILTER_OPTIONS, { each: true })
+  designations?: FilterDesignation[];
 }
