@@ -77,3 +77,26 @@ Content-Type: application/json
   "sponsorshipDescription": "Booth and prize support",
   "comments": "Available for a quick call next week"
 }
+
+### Submit vote - Student (school-based)
+POST {{baseUrl}}/voting
+Content-Type: application/json
+
+{
+  "email": "student.voter@adnu.edu.ph",
+  "school": "ADNU",
+  "vote": 1
+}
+
+### Submit vote - Professional (designation-based)
+POST {{baseUrl}}/voting
+Content-Type: application/json
+
+{
+  "email": "pro.voter@example.com",
+  "proffesional": "game developer",
+  "vote": 2
+}
+
+### Get voting statistics
+GET {{baseUrl}}/voting/statistics

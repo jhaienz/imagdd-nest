@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RegistrationModule } from './registration/registration.module';
 import { SponsorshipModule } from './sponsorship/sponsorship.module';
+import { VotingModule } from './voting/voting.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SponsorshipModule } from './sponsorship/sponsorship.module';
     }),
     RegistrationModule,
     SponsorshipModule,
+    VotingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
