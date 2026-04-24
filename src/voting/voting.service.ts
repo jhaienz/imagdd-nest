@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateVotingDto } from './dto/voting.dto';
+import { resolve4, resolve6, resolveMx } from 'node:dns/promises';
 import {
   Designation,
   Games,
@@ -19,6 +20,37 @@ export class VotingService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private async hasResolvableDomain(domain: string): Promise<boolean> {
+    try {
+      const mxRecords = await resolveMx(domain);
+      if (mxRecords.length > 0) {
+        return true;
+      }
+    } catch {
+      // Fallback to A/AAAA if MX lookup fails.
+    }
+
+    const [ipv4Lookup, ipv6Lookup] = await Promise.allSettled([
+      resolve4(domain),
+      resolve6(domain),
+    ]);
+
+    const hasIpv4 =
+      ipv4Lookup.status === 'fulfilled' && ipv4Lookup.value.length > 0;
+    const hasIpv6 =
+      ipv6Lookup.status === 'fulfilled' && ipv6Lookup.value.length > 0;
+
+    return hasIpv4 || hasIpv6;
+  }
+
+  private async ensureEmailDomainExists(email: string): Promise<void> {
+    const [, domain] = email.split('@');
+
+    if (!domain || !(await this.hasResolvableDomain(domain))) {
+      throw new BadRequestException('Email domain does not exist.');
+    }
   }
 
   private getGameName(gameNumber: number): Games {
@@ -58,6 +90,7 @@ export class VotingService {
     const email = this.normalizeEmail(createVotingDto.email);
     const gameNumber = createVotingDto.vote;
     this.getGameName(gameNumber);
+    await this.ensureEmailDomainExists(email);
     const voterProfile = this.resolveVoterProfile(createVotingDto);
 
     const existingVote = await this.votingModel
