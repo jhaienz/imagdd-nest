@@ -2,7 +2,7 @@ import { Controller, Post, Body, Get } from '@nestjs/common';
 import { VotingService } from './voting.service';
 import { CreateVotingDto } from './dto/voting.dto';
 
-@Controller('votingsss')
+@Controller('voting')
 export class VotingController {
   constructor(private readonly votingService: VotingService) {}
 
