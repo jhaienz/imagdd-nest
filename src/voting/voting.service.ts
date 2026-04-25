@@ -62,6 +62,27 @@ export class VotingService {
     return game;
   }
 
+  private getVotingCutoffTime(): { hour: number; minute: number } {
+    const cutoff = process.env.VOTING_CUTOFF || '16:30';
+    const [hourString, minuteString] = cutoff.split(':');
+    const hour = Number(hourString);
+    const minute = Number(minuteString);
+
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+      return { hour: 16, minute: 30 };
+    }
+
+    return { hour, minute };
+  }
+
+  private isVotingClosed(): boolean {
+    const now = new Date();
+    const { hour, minute } = this.getVotingCutoffTime();
+    const cutoff = new Date(now);
+    cutoff.setHours(hour, minute, 0, 0);
+    return now >= cutoff;
+  }
+
   private resolveVoterProfile(createVotingDto: CreateVotingDto): {
     school?: School;
     proffesional?: Designation;
@@ -90,6 +111,15 @@ export class VotingService {
     const email = this.normalizeEmail(createVotingDto.email);
     const gameNumber = createVotingDto.vote;
     this.getGameName(gameNumber);
+
+    if (this.isVotingClosed()) {
+      const { hour, minute } = this.getVotingCutoffTime();
+      const formattedMinute = minute.toString().padStart(2, '0');
+      throw new BadRequestException(
+        `Voting is closed after ${hour}:${formattedMinute} today.`,
+      );
+    }
+
     await this.ensureEmailDomainExists(email);
     const voterProfile = this.resolveVoterProfile(createVotingDto);
 

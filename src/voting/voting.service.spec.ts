@@ -75,6 +75,31 @@ describe('VotingService', () => {
     expect(votingModel.create).not.toHaveBeenCalled();
   });
 
+  it('should reject vote after cutoff time', async () => {
+    const originalNow = Date.now;
+    jest.spyOn(global.Date, 'now').mockImplementation(() =>
+      new Date(2026, 3, 25, 16, 45).valueOf(),
+    );
+
+    jest
+      .spyOn(service as any, 'hasResolvableDomain')
+      .mockResolvedValueOnce(true);
+
+    await expect(
+      service.vote({
+        email: 'latevoter@example.com',
+        school: 'QCU',
+        vote: 1,
+      }),
+    ).rejects.toThrow(
+      new BadRequestException('Voting is closed after 16:30 today.'),
+    );
+
+    expect(votingModel.findOne).not.toHaveBeenCalled();
+    expect(votingModel.create).not.toHaveBeenCalled();
+    (Date.now as jest.Mock).mockRestore();
+  });
+
   it('should create vote for valid payload', async () => {
     jest
       .spyOn(service as any, 'hasResolvableDomain')
