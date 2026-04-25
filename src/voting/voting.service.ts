@@ -57,7 +57,7 @@ export class VotingService {
     const games = Object.values(Games);
     const game = games[gameNumber - 1];
     if (!game) {
-      throw new BadRequestException('Invalid game number. Use 1 to 7.');
+      throw new BadRequestException('Invalid game number. Use 1 to 16.');
     }
     return game;
   }
@@ -115,7 +115,7 @@ export class VotingService {
 
   async getVotesStatistics() {
     const votes = await this.votingModel.find().lean().exec();
-    const byGame = Array.from({ length: 13 }, (_, index) => {
+    const byGame = Array.from({ length: 16 }, (_, index) => {
       const gameNumber = index + 1;
       const game = this.getGameName(gameNumber);
       const gameVotes = votes.filter((vote) => vote.vote === gameNumber);
