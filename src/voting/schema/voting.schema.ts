@@ -35,6 +35,9 @@ export enum Games {
   INSUREKSYON = "INSUREKSYON",
   MENDVILLE = "MENDVILLE",
   BOL2 = "BOL2",
+  SANTELMO = "SANTELMO",
+  SORT_IT_OUT = "SORT IT OUT"
+
 }
 export type VotingDocument = Voting & Document;
 

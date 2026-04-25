@@ -115,7 +115,7 @@ export class VotingService {
 
   async getVotesStatistics() {
     const votes = await this.votingModel.find().lean().exec();
-    const byGame = Array.from({ length: 16 }, (_, index) => {
+    const byGame = Array.from({ length: 18 }, (_, index) => {
       const gameNumber = index + 1;
       const game = this.getGameName(gameNumber);
       const gameVotes = votes.filter((vote) => vote.vote === gameNumber);
