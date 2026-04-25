@@ -27,6 +27,6 @@ export class CreateVotingDto {
   @IsNotEmpty()
   @IsInt()
   @Min(1)
-  @Max(7)
+  @Max(18)
   vote!: number;
 }

@@ -52,7 +52,7 @@ export class Voting {
   @Prop({ required: false, enum: Designation })
   proffesional?: Designation;
 
-  @Prop({ required: true, min: 1, max: 7 })
+  @Prop({ required: true, min: 1, max: 18 })
   vote!: number;
 }
 

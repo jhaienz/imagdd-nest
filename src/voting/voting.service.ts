@@ -57,7 +57,7 @@ export class VotingService {
     const games = Object.values(Games);
     const game = games[gameNumber - 1];
     if (!game) {
-      throw new BadRequestException('Invalid game number. Use 1 to 16.');
+      throw new BadRequestException('Invalid game number. Use 1 to 18.');
     }
     return game;
   }
